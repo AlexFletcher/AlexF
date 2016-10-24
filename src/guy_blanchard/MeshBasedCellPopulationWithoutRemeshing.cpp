@@ -22,8 +22,8 @@ MeshBasedCellPopulationWithoutRemeshing<DIM>::~MeshBasedCellPopulationWithoutRem
 {
 }
 
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void MeshBasedCellPopulationWithoutRemeshing<ELEMENT_DIM,SPACE_DIM>::Update(bool hasHadBirthsOrDeaths)
+template<unsigned DIM>
+void MeshBasedCellPopulationWithoutRemeshing<DIM>::Update(bool hasHadBirthsOrDeaths)
 {
     // Prevent any cell rearrangements
 }

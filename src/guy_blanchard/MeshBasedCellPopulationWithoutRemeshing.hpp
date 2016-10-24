@@ -32,7 +32,7 @@ public:
      * @param deleteMesh set to true if you want the cell population to free the mesh memory on destruction
      * @param validate whether to validate the cell population
      */
-    MeshBasedCellPopulationWithoutRemeshing(MutableMesh<ELEMENT_DIM, SPACE_DIM>& rMesh,
+    MeshBasedCellPopulationWithoutRemeshing(MutableMesh<DIM, DIM>& rMesh,
                                             std::vector<CellPtr>& rCells,
                                             const std::vector<unsigned> locationIndices=std::vector<unsigned>(),
                                             bool deleteMesh=false,
@@ -43,7 +43,7 @@ public:
      *
      * @param rMesh a mutable tetrahedral mesh.
      */
-    MeshBasedCellPopulationWithoutRemeshing(MutableMesh<ELEMENT_DIM, SPACE_DIM>& rMesh);
+    MeshBasedCellPopulationWithoutRemeshing(MutableMesh<DIM, DIM>& rMesh);
 
     /**
      * Destructor.
