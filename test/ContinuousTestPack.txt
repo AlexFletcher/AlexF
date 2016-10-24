@@ -1,14 +1,1 @@
-guy_blanchard/TestAxisExtensionScenarios.hpp
-guy_blanchard/TestContractilityVersusSupercontractility.hpp
-guy_blanchard/TestContributionOfOrientationDependentLineTension.hpp
-guy_blanchard/TestLenne.hpp
-guy_blanchard/TestPlayingAround.hpp
-guy_blanchard/TestScenario1.hpp
-guy_blanchard/TestScenario2.hpp
-guy_blanchard/TestScenario3.hpp
-guy_blanchard/TestScenario4.hpp
-guy_blanchard/TestSimulationsForGbePaper.hpp
-jeremy_green/TestCellularPottsModelSimulation.hpp
-jeremy_green/TestExampleSimulation.hpp
-jeremy_green/TestVertexModelLabelling.hpp
 TestHello.hpp
