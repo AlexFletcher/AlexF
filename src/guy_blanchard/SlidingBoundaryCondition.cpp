@@ -1,79 +1,64 @@
 
 #include "SlidingBoundaryCondition.hpp"
 
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-SlidingBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::SlidingBoundaryCondition(AbstractCellPopulation<ELEMENT_DIM,SPACE_DIM>* pCellPopulation,
-                                                    double yMin,
-                                                    double yMax)
-    : AbstractCellPopulationBoundaryCondition<ELEMENT_DIM,SPACE_DIM>(pCellPopulation),
+SlidingBoundaryCondition::SlidingBoundaryCondition(AbstractCellPopulation<2,2>* pCellPopulation,
+                                                   double xMin,
+                                                   double yMin,
+                                                   double xMax,
+                                                   double yMax)
+    : AbstractCellPopulationBoundaryCondition<2,2>(pCellPopulation),
+      mXMin(xMin),
       mYMin(yMin),
+      mXMax(xMax),
       mYMax(yMax)
 {
 }
 
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void SlidingBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::ImposeBoundaryCondition(const std::map<Node<SPACE_DIM>*, c_vector<double, SPACE_DIM> >& rOldLocations)
+void SlidingBoundaryCondition::ImposeBoundaryCondition(const std::map<Node<2>*, c_vector<double, 2> >& rOldLocations)
 {
-    double epsilon = 1e-4;
+    double epsilon = 1e-1;
 
+    // Loop over every node
     for (unsigned node_index=0; node_index<this->mpCellPopulation->GetNumNodes(); node_index++)
     {
-        Node<SPACE_DIM>* p_node = this->mpCellPopulation->GetNode(node_index);
+        Node<2>* p_node = this->mpCellPopulation->GetNode(node_index);
 
         if (p_node->IsBoundaryNode())
         {
-            if ((fabs(p_node->rGetLocation()[1] - yMin) > epsilon)) && (fabs(p_node->rGetLocation()[1] - yMax) > epsilon))
+            c_vector<double, 2> old_node_location;
+            old_node_location = rOldLocations.find(p_node)->second;
+
+            // If the node lies on the top or bottom boundary, then revert its y coordinate
+            if ((fabs(p_node->rGetLocation()[1] - mYMin) < epsilon) || (fabs(p_node->rGetLocation()[1] - mYMax) < epsilon))
             {
-                ///\todo implement vertical sliding
+                p_node->rGetModifiableLocation()[1] = old_node_location[1];
+            }
+
+            // If the node lies on the left or right boundary, then revert its x coordinate
+            if ((p_node->rGetLocation()[0] - mXMin < 0.5+epsilon) || (p_node->rGetLocation()[0] - mXMax > -(0.5+epsilon)))
+            {
+                p_node->rGetModifiableLocation()[0] = old_node_location[0];
             }
         }
-        else
-        {
-            ///\todo implement horizontal sliding
-        }
-        ///\todo fix corner nodes
     }
-
-//        unsigned node_index = this->mpCellPopulation->GetLocationIndexUsingCell(*cell_iter);
-//        Node<SPACE_DIM>* p_node = this->mpCellPopulation->GetNode(node_index);
-//
-//        c_vector<double, SPACE_DIM> node_location = p_node->rGetLocation();
-//
-//        double signed_distance = inner_prod(node_location - mPointOnPlane, mNormalToPlane);
-//        if (signed_distance > 0.0)
-//        {
-//            // For the closest point on the plane we travel from node_location the signed_distance in the direction of -mNormalToPlane
-//            c_vector<double, SPACE_DIM> nearest_point;
-//
-//            nearest_point = node_location - signed_distance*mNormalToPlane;
-//            p_node->rGetModifiableLocation() = nearest_point;
-//        }
 }
 
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-bool SlidingBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::VerifyBoundaryCondition()
+bool SlidingBoundaryCondition::VerifyBoundaryCondition()
 {
     return true;
 }
 
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void SlidingBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::OutputCellPopulationBoundaryConditionParameters(out_stream& rParamsFile)
+void SlidingBoundaryCondition::OutputCellPopulationBoundaryConditionParameters(out_stream& rParamsFile)
 {
+    *rParamsFile << "\t\t\t<XMin>" << mXMin << "</YMin>\n";
     *rParamsFile << "\t\t\t<YMin>" << mYMin << "</YMin>\n";
+    *rParamsFile << "\t\t\t<XMax>" << mXMax << "</XMax>\n";
     *rParamsFile << "\t\t\t<YMax>" << mYMax << "</YMax>\n";
 
     // Call method on direct parent class
-    AbstractCellPopulationBoundaryCondition<ELEMENT_DIM,SPACE_DIM>::OutputCellPopulationBoundaryConditionParameters(rParamsFile);
+    AbstractCellPopulationBoundaryCondition<2,2>::OutputCellPopulationBoundaryConditionParameters(rParamsFile);
 }
-
-// Explicit instantiation
-template class SlidingBoundaryCondition<1,1>;
-template class SlidingBoundaryCondition<1,2>;
-template class SlidingBoundaryCondition<2,2>;
-template class SlidingBoundaryCondition<1,3>;
-template class SlidingBoundaryCondition<2,3>;
-template class SlidingBoundaryCondition<3,3>;
 
 // Serialization for Boost >= 1.36
 #include "SerializationExportWrapperForCpp.hpp"
-EXPORT_TEMPLATE_CLASS_ALL_DIMS(SlidingBoundaryCondition)
+CHASTE_CLASS_EXPORT(SlidingBoundaryCondition)

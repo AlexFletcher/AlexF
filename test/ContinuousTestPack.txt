@@ -1,2 +1,2 @@
 TestHello.hpp
-guy_blanchard/TestMyosin.hpp
+jeremy_green/TestVertexModelLabelling.hpp
