@@ -29,7 +29,7 @@ public:
 
         // Set number of labels and waiting time
         unsigned num_labels = 4;
-        double max_waiting_time = 6.0; //48
+        double max_waiting_time = 48.0;
 
         /*
          * Set max cellular growth rate to 1/6 so that average growth rate is 1/12, hence
