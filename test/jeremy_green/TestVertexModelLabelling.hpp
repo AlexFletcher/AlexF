@@ -10,14 +10,13 @@
 #include "CellsGenerator.hpp"
 #include "TransitCellProliferativeType.hpp"
 #include "VertexBasedCellPopulation.hpp"
-#include "CellLabelWriter.hpp"
+//#include "CellLabelWriter.hpp"
 #include "OffLatticeSimulation.hpp"
-#include "FarhadifarForceWithGrowingTargetAreas.hpp"
+#include "FarhadifarForceForAreaBasedCellCycleModel.hpp"
 #include "CellAncestor.hpp"
 #include "AreaBasedCellCycleModel.hpp"
 #include "VolumeTrackingModifier.hpp"
 #include "ClusterDataWriter.hpp"
-#include "FasterMutableVertexMesh.hpp"
 
 class TestVertexModelLabelling : public AbstractCellBasedWithTimingsTestSuite
 {
@@ -25,16 +24,12 @@ public:
 
     void TestLabelling() throw(Exception)
     {
-        // Create overall results file
-        std::string output_directory = "VertexLabelling";
-        OutputFileHandler results_handler(output_directory, false);
-
         ///\todo Consider different labelling proportions
         double labelling_proportion[1] = {0.2};
 
         // Set number of labels and waiting time
         unsigned num_labels = 4;
-        double max_waiting_time = 48.0;
+        double max_waiting_time = 6.0; //48
 
         /*
          * Set max cellular growth rate to 1/6 so that average growth rate is 1/12, hence
@@ -58,6 +53,11 @@ public:
 
             for (unsigned sim_index=0; sim_index<num_sims_per_labelling_prop; sim_index++)
             {
+                std::stringstream out;
+                out << "VertexModelLabelling/Labels4/Prop" << proportion_of_cells_to_label << "/Sim" << sim_index;
+                std::string output_directory = out.str();
+                OutputFileHandler results_handler(output_directory, false);
+
                 // Initialise various singletons
                 SimulationTime::Destroy();
                 SimulationTime::Instance()->SetStartTime(0.0);
@@ -68,7 +68,7 @@ public:
 
                 // Generate random initial mesh
                 VoronoiVertexMeshGenerator generator(num_cells_wide, num_cells_high, num_lloyd_steps, reference_target_area);
-                FasterMutableVertexMesh<2,2>* p_mesh = generator.GetMesh();
+                MutableVertexMesh<2,2>* p_mesh = generator.GetMesh();
                 unsigned num_cells = p_mesh->GetNumElements();
 
                 // Create a vector of cells and associate these with elements of the mesh
@@ -80,17 +80,12 @@ public:
                     AreaBasedCellCycleModel* p_model = new AreaBasedCellCycleModel();
                     p_model->SetReferenceTargetArea(reference_target_area);
                     p_model->SetMaxGrowthRate(max_growth_rate);
-                    p_model->SetReferenceTargetArea(reference_target_area);
 
                     CellPtr p_cell(new Cell(p_state, p_model));
                     p_cell->SetCellProliferativeType(p_type);
-
-                    double initial_age = p_gen->ranf()*12.0;
-                    double initial_target_area = 1.0 + p_gen->ranf()*max_growth_rate*initial_age; ///\todo Reconsider this bit
-
-                    p_cell->SetBirthTime(-initial_age);
-                    p_cell->GetCellData()->SetItem("target area", initial_target_area);
+                    p_cell->SetBirthTime(-p_gen->ranf()*12.0);
                     p_cell->GetCellData()->SetItem("label", 0);
+
                     cells.push_back(p_cell);
                 }
 
@@ -127,7 +122,7 @@ public:
                 simulation.SetEndTime(max_waiting_time);
 
                 // Pass in a force law
-                MAKE_PTR(FarhadifarForceWithGrowingTargetAreas<2>, p_force);
+                MAKE_PTR(FarhadifarForceForAreaBasedCellCycleModel<2>, p_force);
                 simulation.AddForce(p_force);
 
                 // Pass in 'volume' (actually, area) modifier

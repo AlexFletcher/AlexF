@@ -1,28 +1,30 @@
 
 #include "AreaBasedCellCycleModel.hpp"
-#include "Exception.hpp"
-#include "StemCellProliferativeType.hpp"
-#include "TransitCellProliferativeType.hpp"
-#include "DifferentiatedCellProliferativeType.hpp"
 
 AreaBasedCellCycleModel::AreaBasedCellCycleModel()
     : AbstractCellCycleModel(),
-      mReferenceTargetArea(1.0),
-      mTargetArea(1.0),
-      mMaxGrowthRate(1.0)
+      mReferenceTargetArea(DOUBLE_UNSET),
+      mTargetArea(DOUBLE_UNSET),
+      mMaxGrowthRate(DOUBLE_UNSET),
+      mGrowthRate(DOUBLE_UNSET)
 {
 }
 
 AreaBasedCellCycleModel::AreaBasedCellCycleModel(const AreaBasedCellCycleModel& rModel)
     : AbstractCellCycleModel(rModel),
-      mReferenceTargetArea(1.0),
-      mTargetArea(1.0),
-      mMaxGrowthRate(1.0)
+      mReferenceTargetArea(rModel.mReferenceTargetArea),
+      mTargetArea(rModel.mTargetArea),
+      mMaxGrowthRate(rModel.mMaxGrowthRate)
 {
+	mGrowthRate = RandomNumberGenerator::Instance()->ranf()*mMaxGrowthRate;
 }
 
 bool AreaBasedCellCycleModel::ReadyToDivide()
 {
+	assert(mReferenceTargetArea != DOUBLE_UNSET);
+	assert(mMaxGrowthRate != DOUBLE_UNSET);
+	assert(mGrowthRate != DOUBLE_UNSET);
+
     if (!mReadyToDivide)
     {
         double cell_area = mpCell->GetCellData()->GetItem("volume");
@@ -31,9 +33,7 @@ bool AreaBasedCellCycleModel::ReadyToDivide()
             mReadyToDivide = true;
         }
 
-        double growth_rate = RandomNumberGenerator::Instance()->ranf()*mMaxGrowthRate;
-        double dt = SimulationTime::Instance()->GetTimeStep();
-        mTargetArea += growth_rate*dt;
+        mTargetArea = mReferenceTargetArea + mGrowthRate*GetAge();
     }
 
     return mReadyToDivide;
@@ -79,6 +79,7 @@ void AreaBasedCellCycleModel::SetReferenceTargetArea(double referenceTargetArea)
 void AreaBasedCellCycleModel::SetMaxGrowthRate(double maxGrowthRate)
 {
     mMaxGrowthRate = maxGrowthRate;
+    mGrowthRate = RandomNumberGenerator::Instance()->ranf()*mMaxGrowthRate;
 }
 
 double AreaBasedCellCycleModel::GetMaxGrowthRate()
@@ -90,6 +91,7 @@ void AreaBasedCellCycleModel::OutputCellCycleModelParameters(out_stream& rParams
 {
     *rParamsFile << "\t\t\t<ReferenceTargetArea>" << mReferenceTargetArea << "</ReferenceTargetArea>\n";
     *rParamsFile << "\t\t\t<MaxGrowthRate>" << mMaxGrowthRate << "</MaxGrowthRate>\n";
+    *rParamsFile << "\t\t\t<GrowthRate>" << mGrowthRate << "</GrowthRate>\n";
     AbstractCellCycleModel::OutputCellCycleModelParameters(rParamsFile);
 }
 

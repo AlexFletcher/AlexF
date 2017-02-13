@@ -32,6 +32,9 @@ void ClusterDataWriter<ELEMENT_DIM, SPACE_DIM>::Visit(VertexBasedCellPopulation<
             cells_to_consider.insert(*cell_iter);
         }
     }
+    unsigned num_cells_to_consider = cells_to_consider.size();
+
+    *this->mpOutStream << num_cells_to_consider << "\t";
 
     // Iterate over the cells within this region of interest
     std::set<unsigned> cells_already_considered;
@@ -123,7 +126,6 @@ void ClusterDataWriter<ELEMENT_DIM, SPACE_DIM>::Visit(VertexBasedCellPopulation<
                 }
 
                 // Now we have recorded the location index of every cell in the cluster, start outputting data
-
                 *this->mpOutStream << cell_label << "\t";
 
                 std::map<unsigned, unsigned> ancestors_in_cluster;
