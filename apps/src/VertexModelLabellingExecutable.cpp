@@ -4,18 +4,18 @@
 // Includes from trunk
 #include "ExecutableSupport.hpp"
 #include "CellId.hpp"
-#include "FakePetscSetup.hpp"
 #include "SmartPointers.hpp"
 #include "VoronoiVertexMeshGenerator.hpp"
 #include "CellsGenerator.hpp"
 #include "TransitCellProliferativeType.hpp"
 #include "VertexBasedCellPopulation.hpp"
 #include "OffLatticeSimulation.hpp"
-#include "FarhadifarForceForAreaBasedCellCycleModel.hpp"
+#include "FarhadifarForce.hpp"
 #include "CellAncestor.hpp"
-#include "AreaBasedCellCycleModel.hpp"
-#include "VolumeTrackingModifier.hpp"
+#include "UniformCellCycleModel.hpp"
+#include "ConstantTargetAreaModifier.hpp"
 #include "ClusterDataWriter.hpp"
+#include "Debug.hpp"
 
 // Program option includes for handling command line arguments
 #include <boost/program_options/options_description.hpp>
@@ -33,16 +33,15 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
 int main(int argc, char *argv[])
 {
     // This sets up PETSc and prints out copyright information, etc.
-    ExecutableSupport::StandardStartup(&argc, &argv);
+    ExecutableSupport::StartupWithoutShowingCopyright(&argc, &argv);
 
     // Define command line options
     boost::program_options::options_description general_options("This is the vertex model labelling executable.\n");
     general_options.add_options()
                     ("help", "produce help message")
                     ("L", boost::program_options::value<unsigned>()->default_value(1),"The number of coloured labels to use")
-                    ("P", boost::program_options::value<double>()->default_value(0.1),"The proportion of cells in the tissue to label at time zero") ///\todo should this be float?
-                    ("R", boost::program_options::value<unsigned>()->default_value(1),"The number of simulations to run for each parameter set")
-                    ("S", boost::program_options::value<unsigned>()->default_value(0),"The random seed");
+                    ("P", boost::program_options::value<double>()->default_value(0.1),"The proportion of cells in the tissue to label at time zero")
+                    ("R", boost::program_options::value<unsigned>()->default_value(1),"The number of simulations to run for each parameter set");
 
     // Define parse command line into variables_map
     boost::program_options::variables_map variables_map;
@@ -58,13 +57,12 @@ int main(int argc, char *argv[])
 
     // Get ID and name from command line
     unsigned num_labels = variables_map["L"].as<unsigned>();
-    unsigned labelling_proportion = variables_map["P"].as<double>();
+    double labelling_proportion = variables_map["P"].as<double>();
     unsigned num_runs = variables_map["R"].as<unsigned>();
-    unsigned random_seed = variables_map["S"].as<unsigned>();
 
     for (unsigned run_index=0; run_index<num_runs; run_index++)
     {
-        SetupSingletons(random_seed);
+        SetupSingletons(run_index);
         SetupAndRunSimulation(run_index, num_labels, labelling_proportion);
         DestroySingletons();
     }
@@ -100,21 +98,17 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
     // Set number of labels and waiting time
     double max_waiting_time = 48.0;
 
-    /*
-     * Set max cellular growth rate to 1/6 so that average growth rate is 1/12, hence
-     * on average, a cell's target area will grow to twice its initial value
-     * in 12 hours.
-     */
-    double max_growth_rate = 1.0/6.0;
+    // Set lower and upper bounds on cell cycle times (in hours)
+    double min_cycle_time = 10;
+    double max_cycle_time = 14;
 
     // Set parameters for initial tissue geometry
     unsigned num_cells_wide = 17;
     unsigned num_cells_high = 17;
     unsigned num_lloyd_steps = 3;
-    double reference_target_area = 1.0;
 
     // Generate random initial mesh
-    VoronoiVertexMeshGenerator generator(num_cells_wide, num_cells_high, num_lloyd_steps, reference_target_area);
+    VoronoiVertexMeshGenerator generator(num_cells_wide, num_cells_high, num_lloyd_steps);
     MutableVertexMesh<2,2>* p_mesh = generator.GetMesh();
     unsigned num_cells = p_mesh->GetNumElements();
 
@@ -124,13 +118,14 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
     MAKE_PTR(TransitCellProliferativeType, p_type);
     for (unsigned elem_index=0; elem_index<num_cells; elem_index++)
     {
-        AreaBasedCellCycleModel* p_model = new AreaBasedCellCycleModel();
-        p_model->SetReferenceTargetArea(reference_target_area);
-        p_model->SetMaxGrowthRate(max_growth_rate);
+        UniformCellCycleModel* p_model = new UniformCellCycleModel();
+        p_model->SetDimension(2);
+        p_model->SetMinCellCycleDuration(min_cycle_time);
+        p_model->SetMaxCellCycleDuration(max_cycle_time);
 
         CellPtr p_cell(new Cell(p_state, p_model));
         p_cell->SetCellProliferativeType(p_type);
-        p_cell->SetBirthTime(-RandomNumberGenerator::Instance()->ranf()*12.0);
+        p_cell->SetBirthTime(-RandomNumberGenerator::Instance()->ranf()*min_cycle_time);
         p_cell->GetCellData()->SetItem("label", 0);
 
         cells.push_back(p_cell);
@@ -157,6 +152,7 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
 
     // Create cell population
     VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
+    cell_population.SetDampingConstantNormal(0.5);
     cell_population.SetOutputResultsForChasteVisualizer(false);
     cell_population.SetOutputCellRearrangementLocations(false);
     cell_population.SetCellAncestorsToLocationIndices();
@@ -165,15 +161,17 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
     // Create simulation
     OffLatticeSimulation<2> simulation(cell_population);
     simulation.SetOutputDirectory(output_directory);
-    simulation.SetSamplingTimestepMultiple(12.0/0.002); // Default time step is 0.002 for vertex models
+    double dt = 0.001;
+    simulation.SetDt(dt);
+    simulation.SetSamplingTimestepMultiple(6.0/dt); // Default time step is 0.002 for vertex models
     simulation.SetEndTime(max_waiting_time);
 
     // Pass in a force law
-    MAKE_PTR(FarhadifarForceForAreaBasedCellCycleModel<2>, p_force);
+    MAKE_PTR(FarhadifarForce<2>, p_force);
     simulation.AddForce(p_force);
 
-    // Pass in 'volume' (actually, area) modifier
-    MAKE_PTR(VolumeTrackingModifier<2>, p_modifier);
+    // Pass in a target area modifier
+    MAKE_PTR(ConstantTargetAreaModifier<2>, p_modifier);
     simulation.AddSimulationModifier(p_modifier);
 
     // Run simulation

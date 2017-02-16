@@ -4,7 +4,7 @@ import subprocess
 
 import numpy as np
 
-executable = '../../chaste_build/apps/VertexModelLabellingExecutable'
+executable = '../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable'
 
 if not(os.path.isfile(executable)):
     raise Exception('Could not find executable: ' + executable)
@@ -24,14 +24,14 @@ def run_simulations():
     base_command = 'nice -n 19 ' + executable
 
     num_runs = 10
-    num_labels = [1, 2, 3, 4]
-    labelling_prop = [0.05, 0.1, 0.15, 0.2, 0.25]
+    #num_labels = ['3', '4']
+    labelling_prop = ['0.05', '0.1', '0.15', '0.2', '0.25']
     
-    for l in num_labels
-        for p in labelling_prop
-            for s in range(num_runs):
-                command = base_command + ' --L ' + str(l) + ' --P ' + str(p) + ' --R ' + str(num_runs) + ' --S ' + str(s)
-                command_list.append(command)
+    l = 4
+    for p in labelling_prop:
+        for r in range(num_runs):
+            command = base_command + ' --L ' + str(l) + ' --P ' + str(p) + ' --R ' + str(r)
+            command_list.append(command)
 
     # Use processes equal to the number of cpus available
     count = multiprocessing.cpu_count()
