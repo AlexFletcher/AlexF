@@ -21,18 +21,24 @@ def run_simulations():
     # Make a list of calls to a Chaste executable
     command_list = []
 
-    base_command = 'nice -n 19 ' + executable
-
-    num_runs = 10
-    #num_labels = ['3', '4']
-    labelling_prop = ['0.05', '0.1', '0.15', '0.2', '0.25']
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 1 --P 0.20 --R 22')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 1 --P 0.20 --R 23')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 1 --P 0.20 --R 24')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 2 --P 0.05 --R 24')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.20 --R 22')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.20 --R 23')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.20 --R 24')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.25 --R 22')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.25 --R 23')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 3 --P 0.25 --R 24')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.20 --R 22')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.20 --R 23')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.20 --R 24')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.25 --R 21')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.25 --R 22')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.25 --R 23')
+    command_list.append('nice -n 19 ../../chaste_build/projects/AlexF/apps/VertexModelLabellingExecutable --L 4 --P 0.25 --R 24')
     
-    l = 4
-    for p in labelling_prop:
-        for r in range(num_runs):
-            command = base_command + ' --L ' + str(l) + ' --P ' + str(p) + ' --R ' + str(r)
-            command_list.append(command)
-
     # Use processes equal to the number of cpus available
     count = multiprocessing.cpu_count()
 

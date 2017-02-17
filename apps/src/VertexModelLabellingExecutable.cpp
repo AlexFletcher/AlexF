@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
                     ("help", "produce help message")
                     ("L", boost::program_options::value<unsigned>()->default_value(1),"The number of coloured labels to use")
                     ("P", boost::program_options::value<double>()->default_value(0.1),"The proportion of cells in the tissue to label at time zero")
-                    ("R", boost::program_options::value<unsigned>()->default_value(1),"The number of simulations to run for each parameter set");
+                    ("R", boost::program_options::value<unsigned>()->default_value(0),"The random seed to use");
 
     // Define parse command line into variables_map
     boost::program_options::variables_map variables_map;
@@ -58,14 +58,11 @@ int main(int argc, char *argv[])
     // Get ID and name from command line
     unsigned num_labels = variables_map["L"].as<unsigned>();
     double labelling_proportion = variables_map["P"].as<double>();
-    unsigned num_runs = variables_map["R"].as<unsigned>();
+    unsigned random_seed = variables_map["R"].as<unsigned>();
 
-    for (unsigned run_index=0; run_index<num_runs; run_index++)
-    {
-        SetupSingletons(run_index);
-        SetupAndRunSimulation(run_index, num_labels, labelling_proportion);
-        DestroySingletons();
-    }
+    SetupSingletons(random_seed);
+    SetupAndRunSimulation(random_seed, num_labels, labelling_proportion);
+    DestroySingletons();
 }
 
 void SetupSingletons(unsigned randomSeed)
