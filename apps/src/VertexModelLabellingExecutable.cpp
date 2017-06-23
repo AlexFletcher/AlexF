@@ -149,7 +149,7 @@ void SetupAndRunSimulation(unsigned runIndex, unsigned numLabels, double labelli
 
     // Create cell population
     VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
-    cell_population.SetDampingConstantNormal(0.5);
+//    cell_population.SetDampingConstantNormal(0.5);
     cell_population.SetOutputResultsForChasteVisualizer(false);
     cell_population.SetOutputCellRearrangementLocations(false);
     cell_population.SetCellAncestorsToLocationIndices();

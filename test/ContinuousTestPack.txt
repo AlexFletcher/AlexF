@@ -1,2 +1,2 @@
 TestHello.hpp
-jeremy_green/TestVertexModelLabelling.hpp
+guy_blanchard/TestSidekick.hpp
