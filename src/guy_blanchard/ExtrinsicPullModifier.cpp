@@ -39,7 +39,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<unsigned DIM>
 ExtrinsicPullModifier<DIM>::ExtrinsicPullModifier()
     : AbstractCellBasedSimulationModifier<DIM>(),
-      mApplyExtrinsicPullToAllNodes(true)
+      mApplyExtrinsicPullToAllNodes(true),
+      mSpeed(1.0)
 {
 }
 
@@ -51,33 +52,35 @@ ExtrinsicPullModifier<DIM>::~ExtrinsicPullModifier()
 template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
-    // Find width of tissue at this time
-    rCellPopulation.GetWidth(0);
-    ///\todo
+    double dt = SimulationTime::Instance()->GetTimeStep();
 
+	unsigned num_nodes = rCellPopulation.GetNumNodes();
 
+	ChasteCuboid<DIM> bounds = rCellPopulation.rGetMesh().CalculateBoundingBox();
+	double x_min = bounds.rGetLowerCorner()[0];
+	double x_max = bounds.rGetUpperCorner()[0];
+	double width = x_max - x_min;
 
-    // Iterate over nodes in the cell population
-    for (unsigned node_index=0; node_index<num_nodes; node_index++)
-    {
-        Node<DIM>* p_this_node = p_cell_population->GetNode(node_index);
-
-    if (bool(dynamic_cast<MeshBasedCellPopulation<DIM>*>(&rCellPopulation)))
-    {
-        static_cast<MeshBasedCellPopulation<DIM>*>(&(rCellPopulation))->CreateVoronoiTessellation();
-    }
-
-    // Iterate over cell population
-    for (typename AbstractCellPopulation<DIM>::Iterator cell_iter = rCellPopulation.Begin();
-         cell_iter != rCellPopulation.End();
-         ++cell_iter)
-    {
-        // Get the volume of this cell
-        double cell_volume = rCellPopulation.GetVolumeOfCell(*cell_iter);
-
-        // Store the cell's volume in CellData
-        cell_iter->GetCellData()->SetItem("volume", cell_volume);
-    }
+	if (mApplyExtrinsicPullToAllNodes)
+	{
+	    for (unsigned node_index=0; node_index<num_nodes; node_index++)
+	    {
+	        Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
+	        double scaled_width = p_node->rGetLocation()[0] - x_min;
+        	p_node->rGetModifiableLocation()[0] += (scaled_width/width)*mSpeed*dt;
+	    }
+	}
+	else
+	{
+	    for (unsigned node_index=0; node_index<num_nodes; node_index++)
+	    {
+	        Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
+	        if (fabs(p_node->rGetLocation()[0] - x_max) < 0.1)
+	        {
+	        	p_node->rGetModifiableLocation()[0] += mSpeed*dt;
+	        }
+	    }
+	}
 }
 
 template<unsigned DIM>
@@ -85,15 +88,23 @@ void ExtrinsicPullModifier<DIM>::SetupSolve(AbstractCellPopulation<DIM,DIM>& rCe
 {
 }
 
+template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::ApplyExtrinsicPullToAllNodes(bool applyExtrinsicPullToAllNodes)
 {
     mApplyExtrinsicPullToAllNodes = applyExtrinsicPullToAllNodes;
 }
 
 template<unsigned DIM>
+void ExtrinsicPullModifier<DIM>::SetSpeed(double speed)
+{
+	mSpeed = speed;
+}
+
+template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::OutputSimulationModifierParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<ApplyExtrinsicPullToAllNodes>" << mApplyExtrinsicPullToAllNodes << "</ApplyExtrinsicPullToAllNodes>\n";
+    *rParamsFile << "\t\t\t<Speed>" << mSpeed << "</Speed>\n";
 
     // Next, call method on direct parent class
     AbstractCellBasedSimulationModifier<DIM>::OutputSimulationModifierParameters(rParamsFile);

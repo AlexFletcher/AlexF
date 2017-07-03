@@ -60,9 +60,11 @@ private:
     {
         archive & boost::serialization::base_object<AbstractCellBasedSimulationModifier<DIM,DIM> >(*this);
         archive & mApplyExtrinsicPullToAllNodes;
+        archive & mSpeed;
     }
 
     bool mApplyExtrinsicPullToAllNodes;
+    double mSpeed;
 
 public:
 
@@ -99,6 +101,11 @@ public:
      * @param applyExtrinsicPullToAllNodes whether to apply the extrinsic pull to all nodes in the tissue
      */
     void ApplyExtrinsicPullToAllNodes(bool applyExtrinsicPullToAllNodes);
+
+    /**
+     * @param speed the speed of the extrinsic pull
+     */
+    void SetSpeed(double speed);
 
     /**
      * Overridden OutputSimulationModifierParameters() method.

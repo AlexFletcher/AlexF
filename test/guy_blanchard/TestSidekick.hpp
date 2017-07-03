@@ -2,32 +2,38 @@
 #define TESTSIDEKICK_HPP_
 
 #include <cxxtest/TestSuite.h>
+
+// Must be included before other cell_based headers
+#include "CellBasedSimulationArchiver.hpp"
+
 #include "CheckpointArchiveTypes.hpp"
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
 #include "HoneycombVertexMeshGenerator.hpp"
 #include "CellsGenerator.hpp"
 #include "NoCellCycleModel.hpp"
 #include "VertexBasedCellPopulation.hpp"
-#include "StripeStatisticsWriter.hpp"
-#include "ForceForScenario1.hpp"
+#include "SidekickForce.hpp"
 #include "ConstantTargetAreaModifier.hpp"
 #include "OffLatticeSimulation.hpp"
 #include "SmartPointers.hpp"
 #include "FakePetscSetup.hpp"
-#include "RandomForce.hpp"
-#include "CellStripesWriter.hpp"
+#include "ExtrinsicPullModifier.hpp"
+
+static const double M_DT = 0.01;
+static const double M_RELAXATION_TIME = 150;
+static const double M_EXTENSION_TIME = 150;
+static const double M_VIS_TIME_STEP = 1;
+static const unsigned M_NUM_CELLS_WIDE = 14;
+static const unsigned M_NUM_CELLS_HIGH = 20;
 
 class TestSidekick : public AbstractCellBasedWithTimingsTestSuite
 {
 public:
 
-    void TestSimulationWithoutSupercontractility() throw (Exception)
+    void TestInitialRelaxation() throw (Exception)
     {
         // Specify simulation rules
-        bool include_random_jiggling = false;
         bool check_internal_intersections = false;
-        bool use_combined_interfaces_for_line_tension = false;
-        bool use_distinct_stripe_mismatches_for_combined_interfaces = false;
 
         // Specify mechanical parameter values
         double k = 1.0;
@@ -36,21 +42,6 @@ public:
         double heterotypic_line_tension_multiplier = 2.0;
         double supercontractile_line_tension_multiplier = 2.0;
 
-        // Diffusion constant is only used if include_random_jiggling == true
-        double diffusion_constant = 0.01;
-
-        // Specify pre-stripe mechanical relaxation time and stripe simulation time
-        double relaxation_time = 100;
-        double stripe_simulation_time = 100;
-
-        // Specify tissue geometry
-        unsigned num_cells_wide = 14;
-        unsigned num_cells_high = 20;
-
-        // Specify time step
-        double time_step = 0.01;
-        double output_time_step = 1.0;
-
         // Initialise various singletons
         SimulationTime::Destroy();
         SimulationTime::Instance()->SetStartTime(0.0);
@@ -58,7 +49,7 @@ public:
         CellId::ResetMaxCellId();
 
         // Generate a vertex mesh
-        HoneycombVertexMeshGenerator honeycomb_generator(num_cells_wide, num_cells_high);
+        HoneycombVertexMeshGenerator honeycomb_generator(M_NUM_CELLS_WIDE, M_NUM_CELLS_HIGH);
         MutableVertexMesh<2,2>* p_mesh = honeycomb_generator.GetMesh();
         p_mesh->SetCheckForInternalIntersections(check_internal_intersections);
 
@@ -77,19 +68,18 @@ public:
         VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
         cell_population.SetOutputResultsForChasteVisualizer(true);
         cell_population.SetOutputCellRearrangementLocations(false);
-        cell_population.AddCellWriter<CellStripesWriter>();
 
         // Create a simulation using the cell population
         OffLatticeSimulation<2> simulation(cell_population);
         simulation.SetOutputDirectory("TestSidekick");
-        simulation.SetEndTime(relaxation_time);
+        simulation.SetEndTime(M_RELAXATION_TIME);
 
-        simulation.SetDt(time_step);
-        unsigned output_time_step_multiple = (unsigned) (output_time_step/time_step);
+        simulation.SetDt(M_DT);
+        unsigned output_time_step_multiple = (unsigned) (0.1*M_RELAXATION_TIME/M_DT);
         simulation.SetSamplingTimestepMultiple(output_time_step_multiple);
 
         // Create the appropriate force law(s) for the specified geometry
-        MAKE_PTR(ForceForScenario1<2>, p_force);
+        MAKE_PTR(SidekickForce<2>, p_force);
         p_force->SetNumStripes(4);
         p_force->SetAreaElasticityParameter(k);
         p_force->SetPerimeterContractilityParameter(gamma_bar*k);
@@ -97,16 +87,8 @@ public:
         p_force->SetHeterotypicLineTensionParameter(heterotypic_line_tension_multiplier*lambda_bar*pow(k,1.5));
         p_force->SetSupercontractileLineTensionParameter(supercontractile_line_tension_multiplier*lambda_bar*pow(k,1.5));
         p_force->SetBoundaryLineTensionParameter(lambda_bar*lambda_bar*pow(k,1.5));
-        p_force->SetUseCombinedInterfacesForLineTension(false);
 
         simulation.AddForce(p_force);
-
-        if (include_random_jiggling)
-        {
-            MAKE_PTR(RandomForce<2>, p_random_force);
-            p_random_force->SetDiffusionConstant(diffusion_constant);
-            simulation.AddForce(p_random_force);
-        }
 
         // Pass in a target area modifier (needed, but not used)
         MAKE_PTR(ConstantTargetAreaModifier<2>, p_growth_modifier);
@@ -115,13 +97,27 @@ public:
         // Run simulation
         simulation.Solve();
 
-        // Bestow cell stripe identities
-        for (unsigned i=0; i<simulation.rGetCellPopulation().GetNumRealCells(); i++)
-        {
-            unsigned row = i/num_cells_wide;
-            unsigned col = i%num_cells_wide;
+        CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Save(&simulation);
+    }
 
-            CellPtr p_cell = simulation.rGetCellPopulation().GetCellUsingLocationIndex(i);
+    void TestSidekickWithNoExtrinsicPull() throw (Exception)
+    {
+    	// Load simulation
+		OffLatticeSimulation<2>* p_simulator
+			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+
+		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
+        p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
+        p_simulator->SetOutputDirectory("TestSidekickWithNoExtrinsicPull");
+
+        // Bestow cell stripe identities
+        for (unsigned i=0; i<p_simulator->rGetCellPopulation().GetNumRealCells(); i++)
+        {
+            unsigned row = i/M_NUM_CELLS_WIDE;
+            unsigned col = i%M_NUM_CELLS_WIDE;
+
+            CellPtr p_cell = p_simulator->rGetCellPopulation().GetCellUsingLocationIndex(i);
             if (row%4 == 0)
             {
                 if ((col%7 == 0) || (col%7 == 4))      { p_cell->GetCellData()->SetItem("stripe", 1); }
@@ -152,11 +148,119 @@ public:
             }
         }
 
-        p_force->SetUseCombinedInterfacesForLineTension(use_combined_interfaces_for_line_tension);
-        p_force->SetUseDistinctStripeMismatchesForCombinedInterfaces(use_distinct_stripe_mismatches_for_combined_interfaces);
+        p_simulator->Solve();
+    }
 
-        simulation.SetEndTime(stripe_simulation_time + relaxation_time);
-        simulation.Solve();
+    void TestSidekickWithLocalExtrinsicPull() throw (Exception)
+    {
+    	// Load simulation
+		OffLatticeSimulation<2>* p_simulator
+			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+
+		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
+        p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
+        p_simulator->SetOutputDirectory("TestSidekickWithLocalExtrinsicPull");
+
+        // Bestow cell stripe identities
+        for (unsigned i=0; i<p_simulator->rGetCellPopulation().GetNumRealCells(); i++)
+        {
+            unsigned row = i/M_NUM_CELLS_WIDE;
+            unsigned col = i%M_NUM_CELLS_WIDE;
+
+            CellPtr p_cell = p_simulator->rGetCellPopulation().GetCellUsingLocationIndex(i);
+            if (row%4 == 0)
+            {
+                if ((col%7 == 0) || (col%7 == 4))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if ((col%7 == 2) || (col%7 == 6)) { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else if (row%4 == 1)
+            {
+                if ((col%7 == 0) || (col%7 == 3))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 4)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if (col%7 == 5)                   { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else if (row%4 == 2)
+            {
+                if ((col%7 == 0) || (col%7 == 4))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if (col%7 == 2)                   { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else
+            {
+                if ((col%7 == 0) || (col%7 == 3))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 4)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if ((col%7 == 2) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+        }
+
+        MAKE_PTR(ExtrinsicPullModifier<2>, p_modifier);
+        p_modifier->ApplyExtrinsicPullToAllNodes(false);
+        p_modifier->SetSpeed(0.1);
+        p_simulator->AddSimulationModifier(p_modifier);
+
+        p_simulator->Solve();
+    }
+
+    void TestSidekickWithGlobalExtrinsicPull() throw (Exception)
+    {
+    	// Load simulation
+		OffLatticeSimulation<2>* p_simulator
+			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+
+		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
+        p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
+        p_simulator->SetOutputDirectory("TestSidekickWithGlobalExtrinsicPull");
+
+        // Bestow cell stripe identities
+        for (unsigned i=0; i<p_simulator->rGetCellPopulation().GetNumRealCells(); i++)
+        {
+            unsigned row = i/M_NUM_CELLS_WIDE;
+            unsigned col = i%M_NUM_CELLS_WIDE;
+
+            CellPtr p_cell = p_simulator->rGetCellPopulation().GetCellUsingLocationIndex(i);
+            if (row%4 == 0)
+            {
+                if ((col%7 == 0) || (col%7 == 4))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if ((col%7 == 2) || (col%7 == 6)) { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else if (row%4 == 1)
+            {
+                if ((col%7 == 0) || (col%7 == 3))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 4)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if (col%7 == 5)                   { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else if (row%4 == 2)
+            {
+                if ((col%7 == 0) || (col%7 == 4))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if (col%7 == 2)                   { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+            else
+            {
+                if ((col%7 == 0) || (col%7 == 3))      { p_cell->GetCellData()->SetItem("stripe", 1); }
+                else if ((col%7 == 1) || (col%7 == 4)) { p_cell->GetCellData()->SetItem("stripe", 2); }
+                else if ((col%7 == 2) || (col%7 == 5)) { p_cell->GetCellData()->SetItem("stripe", 3); }
+                else                                   { p_cell->GetCellData()->SetItem("stripe", 4); }
+            }
+        }
+
+        MAKE_PTR(ExtrinsicPullModifier<2>, p_modifier);
+        p_modifier->ApplyExtrinsicPullToAllNodes(true);
+        p_modifier->SetSpeed(0.1);
+        p_simulator->AddSimulationModifier(p_modifier);
+
+        p_simulator->Solve();
     }
 };
 
