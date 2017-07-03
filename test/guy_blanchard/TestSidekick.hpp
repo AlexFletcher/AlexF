@@ -40,8 +40,8 @@ public:
         double diffusion_constant = 0.01;
 
         // Specify pre-stripe mechanical relaxation time and stripe simulation time
-        double relaxation_time = 100;//200.0;
-        double stripe_simulation_time = 250;//500.0;
+        double relaxation_time = 100;
+        double stripe_simulation_time = 100;
 
         // Specify tissue geometry
         unsigned num_cells_wide = 14;
@@ -81,7 +81,7 @@ public:
 
         // Create a simulation using the cell population
         OffLatticeSimulation<2> simulation(cell_population);
-        simulation.SetOutputDirectory("Scenario1");
+        simulation.SetOutputDirectory("TestSidekick");
         simulation.SetEndTime(relaxation_time);
 
         simulation.SetDt(time_step);
