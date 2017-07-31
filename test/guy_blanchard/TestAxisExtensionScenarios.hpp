@@ -307,7 +307,7 @@ private:
 
 public:
 
-	// We want 4 stripes in a regular geometry, so set 1st argument to 3 and 2nd argument to 0
+    // We want 4 stripes in a regular geometry, so set 1st argument to 3 and 2nd argument to 0
     void EMOVETHISCAPITALISEDTEXTTORUN_Test24Sep() throw (Exception)
     {
         RunSimulation(3, 0, false, 100.0);

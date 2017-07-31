@@ -16,14 +16,14 @@ AreaBasedCellCycleModel::AreaBasedCellCycleModel(const AreaBasedCellCycleModel& 
       mTargetArea(rModel.mTargetArea),
       mMaxGrowthRate(rModel.mMaxGrowthRate)
 {
-	mGrowthRate = RandomNumberGenerator::Instance()->ranf()*mMaxGrowthRate;
+    mGrowthRate = RandomNumberGenerator::Instance()->ranf()*mMaxGrowthRate;
 }
 
 bool AreaBasedCellCycleModel::ReadyToDivide()
 {
-	assert(mReferenceTargetArea != DOUBLE_UNSET);
-	assert(mMaxGrowthRate != DOUBLE_UNSET);
-	assert(mGrowthRate != DOUBLE_UNSET);
+    assert(mReferenceTargetArea != DOUBLE_UNSET);
+    assert(mMaxGrowthRate != DOUBLE_UNSET);
+    assert(mGrowthRate != DOUBLE_UNSET);
 
     if (!mReadyToDivide)
     {
