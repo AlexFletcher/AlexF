@@ -40,6 +40,7 @@ template<unsigned DIM>
 ExtrinsicPullModifier<DIM>::ExtrinsicPullModifier()
     : AbstractCellBasedSimulationModifier<DIM>(),
       mApplyExtrinsicPullToAllNodes(true),
+      mPinAnteriorMostCells(false),
       mSpeed(1.0)
 {
 }
@@ -53,7 +54,6 @@ template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
     double dt = SimulationTime::Instance()->GetTimeStep();
-
     unsigned num_nodes = rCellPopulation.GetNumNodes();
 
     ChasteCuboid<DIM> bounds = rCellPopulation.rGetMesh().CalculateBoundingBox();
@@ -95,6 +95,12 @@ void ExtrinsicPullModifier<DIM>::ApplyExtrinsicPullToAllNodes(bool applyExtrinsi
 }
 
 template<unsigned DIM>
+void ExtrinsicPullModifier<DIM>::PinAnteriorMostCells(bool pinAnteriorMostCells)
+{
+    mPinAnteriorMostCells = pinAnteriorMostCells;
+}
+
+template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::SetSpeed(double speed)
 {
     mSpeed = speed;
@@ -104,6 +110,7 @@ template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::OutputSimulationModifierParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<ApplyExtrinsicPullToAllNodes>" << mApplyExtrinsicPullToAllNodes << "</ApplyExtrinsicPullToAllNodes>\n";
+    *rParamsFile << "\t\t\t<PinAnteriorMostCells>" << mPinAnteriorMostCells << "</PinAnteriorMostCells>\n";
     *rParamsFile << "\t\t\t<Speed>" << mSpeed << "</Speed>\n";
 
     // Next, call method on direct parent class

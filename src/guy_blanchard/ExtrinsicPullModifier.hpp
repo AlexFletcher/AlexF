@@ -60,10 +60,12 @@ private:
     {
         archive & boost::serialization::base_object<AbstractCellBasedSimulationModifier<DIM,DIM> >(*this);
         archive & mApplyExtrinsicPullToAllNodes;
+        archive & mPinAnteriorMostCells;
         archive & mSpeed;
     }
 
     bool mApplyExtrinsicPullToAllNodes;
+    bool mPinAnteriorMostCells;
     double mSpeed;
 
 public:
@@ -101,6 +103,11 @@ public:
      * @param applyExtrinsicPullToAllNodes whether to apply the extrinsic pull to all nodes in the tissue
      */
     void ApplyExtrinsicPullToAllNodes(bool applyExtrinsicPullToAllNodes);
+
+    /**
+     * @param PinAnteriorMostCells whether to pin the anterior-most cells
+     */
+    void PinAnteriorMostCells(bool pinAnteriorMostCells);
 
     /**
      * @param speed the speed of the extrinsic pull
