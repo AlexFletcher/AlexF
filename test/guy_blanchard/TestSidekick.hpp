@@ -20,8 +20,8 @@
 #include "ExtrinsicPullModifier.hpp"
 
 static const double M_DT = 0.01;
-static const double M_RELAXATION_TIME = 150;
-static const double M_EXTENSION_TIME = 150;
+static const double M_RELAXATION_TIME = 200;
+static const double M_EXTENSION_TIME = 300;
 static const double M_VIS_TIME_STEP = 1;
 static const unsigned M_NUM_CELLS_WIDE = 14;
 static const unsigned M_NUM_CELLS_HIGH = 20;
@@ -100,7 +100,7 @@ public:
         CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Save(&simulation);
     }
 
-    void TestSidekickWithNoExtrinsicPull() throw (Exception)
+    void XTestSidekickWithNoExtrinsicPull() throw (Exception)
     {
     	// Load simulation
 		OffLatticeSimulation<2>* p_simulator
@@ -151,7 +151,7 @@ public:
         p_simulator->Solve();
     }
 
-    void TestSidekickWithLocalExtrinsicPull() throw (Exception)
+    void XTestSidekickWithLocalExtrinsicPull() throw (Exception)
     {
     	// Load simulation
 		OffLatticeSimulation<2>* p_simulator
@@ -257,6 +257,7 @@ public:
 
         MAKE_PTR(ExtrinsicPullModifier<2>, p_modifier);
         p_modifier->ApplyExtrinsicPullToAllNodes(true);
+        p_modifier->PinAnteriorMostCells(true);
         p_modifier->SetSpeed(0.1);
         p_simulator->AddSimulationModifier(p_modifier);
 

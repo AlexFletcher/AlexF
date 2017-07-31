@@ -40,6 +40,7 @@ template<unsigned DIM>
 ExtrinsicPullModifier<DIM>::ExtrinsicPullModifier()
     : AbstractCellBasedSimulationModifier<DIM>(),
       mApplyExtrinsicPullToAllNodes(true),
+      mPinAnteriorMostCells(false),
       mSpeed(1.0)
 {
 }
@@ -66,7 +67,13 @@ void ExtrinsicPullModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DI
 	    for (unsigned node_index=0; node_index<num_nodes; node_index++)
 	    {
 	        Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
-	        double scaled_width = p_node->rGetLocation()[0] - x_min;
+            double scaled_width = p_node->rGetLocation()[0] - x_min;
+
+	        if (mPinAnteriorMostCells)
+	        {
+	            ///\todo something
+	        }
+
         	p_node->rGetModifiableLocation()[0] += (scaled_width/width)*mSpeed*dt;
 	    }
 	}
@@ -95,6 +102,12 @@ void ExtrinsicPullModifier<DIM>::ApplyExtrinsicPullToAllNodes(bool applyExtrinsi
 }
 
 template<unsigned DIM>
+void ExtrinsicPullModifier<DIM>::PinAnteriorMostCells(bool pinAnteriorMostCells)
+{
+    mPinAnteriorMostCells = pinAnteriorMostCells;
+}
+
+template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::SetSpeed(double speed)
 {
 	mSpeed = speed;
@@ -104,6 +117,7 @@ template<unsigned DIM>
 void ExtrinsicPullModifier<DIM>::OutputSimulationModifierParameters(out_stream& rParamsFile)
 {
     *rParamsFile << "\t\t\t<ApplyExtrinsicPullToAllNodes>" << mApplyExtrinsicPullToAllNodes << "</ApplyExtrinsicPullToAllNodes>\n";
+    *rParamsFile << "\t\t\t<PinAnteriorMostCells>" << mPinAnteriorMostCells << "</PinAnteriorMostCells>\n";
     *rParamsFile << "\t\t\t<Speed>" << mSpeed << "</Speed>\n";
 
     // Next, call method on direct parent class
