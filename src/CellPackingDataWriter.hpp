@@ -24,30 +24,6 @@ public:
     virtual void VisitCell(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
     void WriteTimeStamp();
     virtual void WriteNewline();
-
-    /**
-     * Helper function to determine the average area of cell neighbours for this cell
-     *
-     * @param pCell the cell to write
-     * @param pCellPopulation a pointer to the cell population owning the cell.
-     */
-    double GetAverageCellAreaOfNeighbours(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
-
-    /**
-     * Helper function to determine the average number of neighbours for this cell
-     *
-     * @param pCell the cell to write
-     * @param pCellPopulation a pointer to the cell population owning the cell.
-     */
-    double GetAverageNeighbourNumberOfNeighbours(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
-
-    /**
-     * Helper function to determine if any neighbours of the cell are on the boundary of the population.
-     *
-     * @param pCell the cell to write
-     * @param pCellPopulation a pointer to the cell population owning the cell.
-     */
-    bool IsCellOnInnerBoundary(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
 };
 
 #include "SerializationExportWrapper.hpp"

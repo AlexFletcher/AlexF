@@ -7,6 +7,7 @@
 #include "FakePetscSetup.hpp"
 #include "SmartPointers.hpp"
 #include "VoronoiVertexMeshGenerator.hpp"
+#include "WildTypeCellMutationState.hpp"
 #include "TransitCellProliferativeType.hpp"
 #include "ExponentialG1GenerationalCellCycleModel.hpp"
 #include "VertexBasedCellPopulation.hpp"
@@ -15,6 +16,7 @@
 #include "OffLatticeSimulation.hpp"
 #include "FarhadifarForce.hpp"
 #include "ConstantTargetAreaModifier.hpp"
+#include "TargetAreaLinearGrowthModifier.hpp"
 #include "CellPackingDataWriter.hpp"
 #include "FollicularEpitheliumStretchModifier.hpp"
 
@@ -26,16 +28,16 @@ public:
     {
         RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
 
-        // Set model parameters
-        unsigned num_rounds_division = 5;
-        double mean_g1_phase_duration = 2.0;
-        double s_phase_duration = 5.0; // default value is 5.0
-        double g2_phase_duration = 4.0; // default value is 4.0
-        double m_phase_duration = 1.0; // default value is 1.0
-        double mean_cycle_duration = mean_g1_phase_duration + s_phase_duration + g2_phase_duration + m_phase_duration;
+        // Set parameters
+        double mean_g1_phase = 2.0;
+        double s_phase = 1.0;
+        double g2_phase = 0.5;
+        double m_phase = 0.5;
+        double mean_cycle = mean_g1_phase + s_phase + g2_phase + m_phase;
 
+        double time_step = 0.001;
         unsigned num_simulations = 1;
-        double simulation_duration = 5.0*mean_cycle_duration;
+        double simulation_duration = 40.0; // 30.0
 
         // Set parameters for initial tissue geometry
         unsigned num_cells_wide = 5;
@@ -44,10 +46,11 @@ public:
 
         for (unsigned sim_index=0; sim_index<num_simulations; sim_index++)
         {
-//            std::stringstream out;
-//            out << "TestFollicularEpitheliumCellPacking/" << proportion_of_cells_to_label << "/Sim" << sim_index;
-//            std::string output_directory = out.str();
-//            OutputFileHandler results_handler(output_directory, false);
+            // Specify output directory
+            std::stringstream out;
+            out << "TestFollicularEpitheliumCellPacking" << "/Sim" << sim_index;
+            std::string output_directory = out.str();
+            OutputFileHandler results_handler(output_directory, false);
 
             // Initialise various singletons
             SimulationTime::Destroy();
@@ -55,6 +58,11 @@ public:
             CellPropertyRegistry::Instance()->Clear();
             CellId::ResetMaxCellId();
             p_gen->Reseed(sim_index);
+
+            // Generate random initial mesh
+            VoronoiVertexMeshGenerator generator(num_cells_wide, num_cells_high, num_lloyd_steps);
+            MutableVertexMesh<2,2>* p_mesh = generator.GetMesh();
+            unsigned num_cells = p_mesh->GetNumElements();
 
             // Create a vector of cells and associate these with elements of the mesh
             std::vector<CellPtr> cells;
@@ -64,19 +72,21 @@ public:
             {
                 ExponentialG1GenerationalCellCycleModel* p_model = new ExponentialG1GenerationalCellCycleModel();
                 p_model->SetDimension(2);
-                p_model->SetRate(1.0/mean_g1_phase_duration); ///\todo set suitable mean G1 duration and other phases' durations
-                p_model->SetSDuration(s_phase_duration);
-                p_model->SetG2Duration(g2_phase_duration);
-                p_model->SetMDuration(m_phase_duration);
+                p_model->SetRate(1.0/mean_g1_phase); ///\todo set suitable mean G1 duration and other phases' durations
+                p_model->SetSDuration(s_phase);
+                p_model->SetG2Duration(g2_phase);
+                p_model->SetMDuration(m_phase);
+                p_model->SetMaxTransitGenerations(UINT_MAX);
 
                 CellPtr p_cell(new Cell(p_state, p_model));
                 p_cell->SetCellProliferativeType(p_type);
-                p_cell->SetBirthTime(-p_gen->ranf()*mean_cycle_duration);
+                p_cell->SetBirthTime(0.0);
                 cells.push_back(p_cell);
             }
 
             // Create cell population
             VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
+            cell_population.SetDampingConstantNormal(0.1);
             cell_population.SetOutputResultsForChasteVisualizer(false);
             cell_population.SetOutputCellRearrangementLocations(false);
             cell_population.AddCellWriter<CellPackingDataWriter>();
@@ -84,12 +94,12 @@ public:
             // Set the division rule for our population
             boost::shared_ptr<AbstractVertexBasedDivisionRule<2> > p_division_rule_to_set(new RandomDirectionVertexBasedDivisionRule<2>());
             cell_population.SetVertexBasedDivisionRule(p_division_rule_to_set);
-            ///\todo add a switch statement here allowing for other division rules to be set
 
             // Create simulation
             OffLatticeSimulation<2> simulation(cell_population);
             simulation.SetOutputDirectory(output_directory);
-            simulation.SetSamplingTimestepMultiple(1.0/0.002); // Default time step is 0.002 for vertex models
+            simulation.SetDt(time_step);
+            simulation.SetSamplingTimestepMultiple(mean_cycle/time_step);
             simulation.SetEndTime(simulation_duration);
 
             // Pass in a force law
@@ -102,6 +112,8 @@ public:
 
             // Run simulation
             simulation.Solve();
+
+            std::cout << simulation.rGetCellPopulation().GetNumRealCells() << std::endl;
         }
     }
 };
