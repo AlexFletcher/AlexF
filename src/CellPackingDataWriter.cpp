@@ -40,12 +40,12 @@ void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::VisitCell(CellPtr pCell, Abs
                        << num_edges << " "
                        << cell_area << " "
                        << cell_perimeter << " "
-                       << shape_factor << "\n";
+                       << shape_factor << " ";
 
     c_vector<double, SPACE_DIM> centre_location = pCellPopulation->GetLocationOfCellCentre(pCell);
     for (unsigned i=0; i<SPACE_DIM; i++)
     {
-        *this->mpOutStream << " " << centre_location[i];
+        *this->mpOutStream << centre_location[i]  << " ";
     }
 }
 

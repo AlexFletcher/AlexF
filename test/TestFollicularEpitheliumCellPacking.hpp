@@ -53,7 +53,7 @@ private:
         {
             // Generate the name of the output directory based on the input arguments to this method
             std::stringstream out;
-            out << "TestFollicularEpitheliumCellPacking";
+            out << "TestFollicularEpitheliumCellPacking/";
             switch (divisionRule)
             {
                 case 0:  { out << "RandomOrientedDivision";      break; }
@@ -70,7 +70,7 @@ private:
                 case 2:  { out << "NonUniformStretch"; break; }
                 default: { NEVER_REACHED; }
             }
-            out << "TestFollicularEpitheliumCellPacking" << "/Sim" << sim_index;
+            out << "/Sim" << sim_index;
             std::string output_directory = out.str();
             OutputFileHandler results_handler(output_directory, false);
 
@@ -173,24 +173,24 @@ private:
 
 public:
 
-    void ALREADY_RAN_TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
     {
-        RunSimulations(0, 0, 10);
+        RunSimulations(0, 0, 5);
     }
 
     void TestShortAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
     {
-        RunSimulations(1, 0, 10);
+        RunSimulations(1, 0, 5);
     }
 
     void TestLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
     {
-        RunSimulations(2, 0, 10);
+        RunSimulations(2, 0, 5);
     }
 
     void TestOffLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
     {
-        RunSimulations(3, 0, 10);
+        RunSimulations(3, 0, 5);
     }
 };
 
