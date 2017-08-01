@@ -6,13 +6,19 @@
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
 #include "FakePetscSetup.hpp"
 #include "SmartPointers.hpp"
+
 #include "VoronoiVertexMeshGenerator.hpp"
 #include "WildTypeCellMutationState.hpp"
 #include "TransitCellProliferativeType.hpp"
 #include "ExponentialG1GenerationalCellCycleModel.hpp"
 #include "VertexBasedCellPopulation.hpp"
+
 #include "RandomDirectionVertexBasedDivisionRule.hpp"
 #include "ShortAxisVertexBasedDivisionRule.hpp"
+#include "LongAxisVertexBasedDivisionRule.hpp"
+#include "OffLongAxisVertexBasedDivisionRule.hpp"
+#include "TensionOrientedVertexBasedDivisionRule.hpp"
+
 #include "OffLatticeSimulation.hpp"
 #include "FarhadifarForce.hpp"
 #include "ConstantTargetAreaModifier.hpp"
@@ -22,32 +28,48 @@
 
 class TestFollicularEpitheliumCellPacking : public AbstractCellBasedWithTimingsTestSuite
 {
-public:
+private:
 
-    void TestSimulation() throw(Exception)
+    void RunSimulations(unsigned divisionRule, unsigned stretch, unsigned numSimulations)
     {
         RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
 
         // Set parameters
         double mean_g1_phase = 2.0;
         double s_phase = 1.0;
-        double g2_phase = 0.5;
+        double g2_phase = 1.5;
         double m_phase = 0.5;
         double mean_cycle = mean_g1_phase + s_phase + g2_phase + m_phase;
 
         double time_step = 0.001;
-        unsigned num_simulations = 1;
-        double simulation_duration = 40.0; // 30.0
+        double simulation_duration = 30.0;
 
         // Set parameters for initial tissue geometry
         unsigned num_cells_wide = 5;
         unsigned num_cells_high = 5;
         unsigned num_lloyd_steps = 3;
 
-        for (unsigned sim_index=0; sim_index<num_simulations; sim_index++)
+        for (unsigned sim_index=0; sim_index<numSimulations; sim_index++)
         {
-            // Specify output directory
+            // Generate the name of the output directory based on the input arguments to this method
             std::stringstream out;
+            out << "TestFollicularEpitheliumCellPacking";
+            switch (divisionRule)
+            {
+                case 0:  { out << "RandomOrientedDivision";      break; }
+                case 1:  { out << "ShortAxisOrientedDivision";   break; }
+                case 2:  { out << "LongAxisOrientedDivision";    break; }
+                case 3:  { out << "OffLongAxisOrientedDivision"; break; }
+                case 4:  { out << "TensionOrientedDivision";     break; }
+                default: { NEVER_REACHED; }
+            }
+            switch (stretch)
+            {
+                case 0:  { out << "NoStretch";         break; }
+                case 1:  { out << "UniformStretch";    break; }
+                case 2:  { out << "NonUniformStretch"; break; }
+                default: { NEVER_REACHED; }
+            }
             out << "TestFollicularEpitheliumCellPacking" << "/Sim" << sim_index;
             std::string output_directory = out.str();
             OutputFileHandler results_handler(output_directory, false);
@@ -91,9 +113,41 @@ public:
             cell_population.SetOutputCellRearrangementLocations(false);
             cell_population.AddCellWriter<CellPackingDataWriter>();
 
-            // Set the division rule for our population
-            boost::shared_ptr<AbstractVertexBasedDivisionRule<2> > p_division_rule_to_set(new RandomDirectionVertexBasedDivisionRule<2>());
-            cell_population.SetVertexBasedDivisionRule(p_division_rule_to_set);
+            // Set the rule for cell division orientation
+            switch (divisionRule)
+            {
+                case 0:
+                {
+                    MAKE_PTR(RandomDirectionVertexBasedDivisionRule<2>, p_random_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_random_rule);
+                    break;
+                }
+                case 1:
+                {
+                    MAKE_PTR(ShortAxisVertexBasedDivisionRule<2>, p_short_axis_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_short_axis_rule);
+                    break;
+                }
+                case 2:
+                {
+                    MAKE_PTR(LongAxisVertexBasedDivisionRule<2>, p_long_axis_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_long_axis_rule);
+                    break;
+                }
+                case 3:
+                {
+                    MAKE_PTR(OffLongAxisVertexBasedDivisionRule<2>, p_off_long_axis_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_off_long_axis_rule);
+                    break;
+                }
+                case 4:
+                {
+                    MAKE_PTR(TensionOrientedVertexBasedDivisionRule<2>, p_tension_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_tension_rule);
+                    break;
+                }
+                default: { NEVER_REACHED; }
+            }
 
             // Create simulation
             OffLatticeSimulation<2> simulation(cell_population);
@@ -110,11 +164,18 @@ public:
             MAKE_PTR(ConstantTargetAreaModifier<2>, p_modifier);
             simulation.AddSimulationModifier(p_modifier);
 
+            ///\todo impose stretch, if specified
+
             // Run simulation
             simulation.Solve();
-
-            std::cout << simulation.rGetCellPopulation().GetNumRealCells() << std::endl;
         }
+    }
+
+public:
+
+    void TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
+    {
+        RunSimulations(0, 0, 4);
     }
 };
 
