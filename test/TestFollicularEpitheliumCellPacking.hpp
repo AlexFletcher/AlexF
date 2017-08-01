@@ -25,6 +25,7 @@
 #include "TargetAreaLinearGrowthModifier.hpp"
 #include "CellPackingDataWriter.hpp"
 #include "FollicularEpitheliumStretchModifier.hpp"
+#include "ExtrinsicPullModifier.hpp"
 
 class TestFollicularEpitheliumCellPacking : public AbstractCellBasedWithTimingsTestSuite
 {
@@ -146,7 +147,10 @@ private:
                     cell_population.SetVertexBasedDivisionRule(p_tension_rule);
                     break;
                 }
-                default: { NEVER_REACHED; }
+                default:
+                {
+                	NEVER_REACHED;
+                }
             }
 
             // Create simulation
@@ -166,6 +170,29 @@ private:
 
             ///\todo impose stretch, if specified
 
+            // Set the rule for cell division orientation
+            switch (stretch)
+            {
+                case 0:
+                {
+                    // Do nothing
+                    break;
+                }
+                case 1:
+                {
+                    MAKE_PTR(ExtrinsicPullModifier<2>, p_modifier);
+                    p_modifier->ApplyExtrinsicPullToAllNodes(true);
+                    p_modifier->PinAnteriorMostCells(true);
+                    p_modifier->SetSpeed(0.1);
+                    simulation.AddSimulationModifier(p_modifier);
+                    break;
+                }
+                default:
+                {
+                	NEVER_REACHED;
+                }
+            }
+
             // Run simulation
             simulation.Solve();
         }
@@ -173,24 +200,29 @@ private:
 
 public:
 
-    void TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void XXTestRandomOrientedDivisionNoStretch() throw (Exception)
     {
         RunSimulations(0, 0, 5);
     }
 
-    void TestShortAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void XXTestShortAxisOrientedDivisionNoStretch() throw (Exception)
     {
         RunSimulations(1, 0, 5);
     }
 
-    void TestLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void XXTestLongAxisOrientedDivisionNoStretch() throw (Exception)
     {
         RunSimulations(2, 0, 5);
     }
 
-    void TestOffLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void XXTestOffLongAxisOrientedDivisionNoStretch() throw (Exception)
     {
         RunSimulations(3, 0, 5);
+    }
+
+    void TestOffLongAxisOrientedDivisionUniformStretch() throw (Exception)
+    {
+        RunSimulations(3, 1, 5);
     }
 };
 
