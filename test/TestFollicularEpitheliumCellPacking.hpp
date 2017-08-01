@@ -41,7 +41,7 @@ private:
         double m_phase = 0.5;
         double mean_cycle = mean_g1_phase + s_phase + g2_phase + m_phase;
 
-        double time_step = 0.001;
+        double time_step = 0.0005;
         double simulation_duration = 30.0;
 
         // Set parameters for initial tissue geometry
@@ -173,9 +173,24 @@ private:
 
 public:
 
-    void TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
+    void ALREADY_RAN_TestRandomOrientedDivisionNoStretch10Simulations() throw (Exception)
     {
-        RunSimulations(0, 0, 4);
+        RunSimulations(0, 0, 10);
+    }
+
+    void TestShortAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    {
+        RunSimulations(1, 0, 10);
+    }
+
+    void TestLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    {
+        RunSimulations(2, 0, 10);
+    }
+
+    void TestOffLongAxisOrientedDivisionNoStretch10Simulations() throw (Exception)
+    {
+        RunSimulations(3, 0, 10);
     }
 };
 
