@@ -24,7 +24,6 @@ void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::VisitCell(CellPtr pCell, Abs
     // Assume we are using a VertexBasedCellPopulation
     MutableVertexMesh<ELEMENT_DIM, SPACE_DIM>* p_mesh = static_cast<MutableVertexMesh<ELEMENT_DIM, SPACE_DIM>* >(&(pCellPopulation->rGetMesh()));
 
-    double time = SimulationTime::Instance()->GetTime();
     unsigned cell_id = pCell->GetCellId();
     unsigned location_index = pCellPopulation->GetLocationIndexUsingCell(pCell);
     bool on_boundary = p_mesh->GetElement(location_index)->IsElementOnBoundary();
@@ -33,8 +32,7 @@ void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::VisitCell(CellPtr pCell, Abs
     double cell_perimeter = p_mesh->GetSurfaceAreaOfElement(location_index);
     double shape_factor = p_mesh->GetElongationShapeFactorOfElement(location_index);
 
-    *this->mpOutStream << time << " "
-                       << cell_id << " "
+    *this->mpOutStream << cell_id << " "
                        << location_index << " "
                        << on_boundary << " "
                        << num_edges << " "
@@ -47,16 +45,6 @@ void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::VisitCell(CellPtr pCell, Abs
     {
         *this->mpOutStream << centre_location[i]  << " ";
     }
-}
-
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::WriteTimeStamp()
-{
-}
-
-template<unsigned ELEMENT_DIM, unsigned SPACE_DIM>
-void CellPackingDataWriter<ELEMENT_DIM, SPACE_DIM>::WriteNewline()
-{
 }
 
 // Explicit instantiation

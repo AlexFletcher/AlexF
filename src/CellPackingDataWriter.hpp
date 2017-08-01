@@ -22,8 +22,6 @@ public:
     CellPackingDataWriter();
     double GetCellDataForVtkOutput(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
     virtual void VisitCell(CellPtr pCell, AbstractCellPopulation<ELEMENT_DIM, SPACE_DIM>* pCellPopulation);
-    void WriteTimeStamp();
-    virtual void WriteNewline();
 };
 
 #include "SerializationExportWrapper.hpp"
