@@ -96,7 +96,7 @@ public:
         // Create force law
         MAKE_PTR(LenneForce<2>, p_force);
         p_force->SetAreaElasticityParameter(20.0);
-	p_force->SetPerimeterContractilityParameter(0.0);
+    p_force->SetPerimeterContractilityParameter(0.0);
         p_force->SetLineTensionParameter(1.0);
         p_force->SetBoundaryLineTensionParameter(0.5);
 

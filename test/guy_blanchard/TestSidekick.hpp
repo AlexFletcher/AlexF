@@ -102,11 +102,11 @@ public:
 
     void XTestSidekickWithNoExtrinsicPull() throw (Exception)
     {
-    	// Load simulation
-		OffLatticeSimulation<2>* p_simulator
-			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+        // Load simulation
+        OffLatticeSimulation<2>* p_simulator
+            = CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
 
-		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
         unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
         p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
         p_simulator->SetOutputDirectory("TestSidekickWithNoExtrinsicPull");
@@ -153,11 +153,11 @@ public:
 
     void XTestSidekickWithLocalExtrinsicPull() throw (Exception)
     {
-    	// Load simulation
-		OffLatticeSimulation<2>* p_simulator
-			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+        // Load simulation
+        OffLatticeSimulation<2>* p_simulator
+            = CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
 
-		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
         unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
         p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
         p_simulator->SetOutputDirectory("TestSidekickWithLocalExtrinsicPull");
@@ -209,11 +209,11 @@ public:
 
     void TestSidekickWithGlobalExtrinsicPull() throw (Exception)
     {
-    	// Load simulation
-		OffLatticeSimulation<2>* p_simulator
-			= CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
+        // Load simulation
+        OffLatticeSimulation<2>* p_simulator
+            = CellBasedSimulationArchiver<2, OffLatticeSimulation<2> >::Load("TestSidekick", M_RELAXATION_TIME);
 
-		p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
+        p_simulator->SetEndTime(M_RELAXATION_TIME + M_EXTENSION_TIME);
         unsigned output_time_step_multiple = (unsigned) (M_VIS_TIME_STEP/M_DT);
         p_simulator->SetSamplingTimestepMultiple(output_time_step_multiple);
         p_simulator->SetOutputDirectory("TestSidekickWithGlobalExtrinsicPull");
