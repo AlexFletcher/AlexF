@@ -5,7 +5,8 @@ FollicularEpitheliumStretchModifier<DIM>::FollicularEpitheliumStretchModifier()
     : AbstractCellBasedSimulationModifier<DIM>(),
       mApplyExtrinsicPullToAllNodes(true),
       mPinAnteriorMostCells(false),
-      mSpeed(1.0)
+      mSpeed(1.0),
+      mIncreaseStretchOverTime(false)
 {
 }
 
@@ -19,39 +20,44 @@ void FollicularEpitheliumStretchModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCel
 {
     double dt = SimulationTime::Instance()->GetTimeStep();
 
-	unsigned num_nodes = rCellPopulation.GetNumNodes();
+    if (mIncreaseStretchOverTime)
+    {
+        mSpeed *= (1.0 + 0.1*dt);
+    }
 
-	ChasteCuboid<DIM> bounds = rCellPopulation.rGetMesh().CalculateBoundingBox();
-	double x_min = bounds.rGetLowerCorner()[0];
-	double x_max = bounds.rGetUpperCorner()[0];
-	double width = x_max - x_min;
+    unsigned num_nodes = rCellPopulation.GetNumNodes();
 
-	if (mApplyExtrinsicPullToAllNodes)
-	{
-	    for (unsigned node_index=0; node_index<num_nodes; node_index++)
-	    {
-	        Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
+    ChasteCuboid<DIM> bounds = rCellPopulation.rGetMesh().CalculateBoundingBox();
+    double x_min = bounds.rGetLowerCorner()[0];
+    double x_max = bounds.rGetUpperCorner()[0];
+    double width = x_max - x_min;
+
+    if (mApplyExtrinsicPullToAllNodes)
+    {
+        for (unsigned node_index=0; node_index<num_nodes; node_index++)
+        {
+            Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
             double scaled_width = p_node->rGetLocation()[0] - x_min;
 
-	        if (mPinAnteriorMostCells)
-	        {
-	            ///\todo something
-	        }
+            if (mPinAnteriorMostCells)
+            {
+                ///\todo something
+            }
 
-        	p_node->rGetModifiableLocation()[0] += (scaled_width/width)*mSpeed*dt;
-	    }
-	}
-	else
-	{
-	    for (unsigned node_index=0; node_index<num_nodes; node_index++)
-	    {
-	        Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
-	        if (fabs(p_node->rGetLocation()[0] - x_max) < 0.1)
-	        {
-	        	p_node->rGetModifiableLocation()[0] += mSpeed*dt;
-	        }
-	    }
-	}
+            p_node->rGetModifiableLocation()[0] += (scaled_width/width)*mSpeed*dt;
+        }
+    }
+    else
+    {
+        for (unsigned node_index=0; node_index<num_nodes; node_index++)
+        {
+            Node<DIM>* p_node = rCellPopulation.GetNode(node_index);
+            if (fabs(p_node->rGetLocation()[0] - x_max) < 0.1)
+            {
+                p_node->rGetModifiableLocation()[0] += mSpeed*dt;
+            }
+        }
+    }
 }
 
 template<unsigned DIM>
@@ -74,7 +80,13 @@ void FollicularEpitheliumStretchModifier<DIM>::PinAnteriorMostCells(bool pinAnte
 template<unsigned DIM>
 void FollicularEpitheliumStretchModifier<DIM>::SetSpeed(double speed)
 {
-	mSpeed = speed;
+    mSpeed = speed;
+}
+
+template<unsigned DIM>
+void FollicularEpitheliumStretchModifier<DIM>::IncreaseStretchOverTime(bool increaseStretchOverTime)
+{
+    mIncreaseStretchOverTime = increaseStretchOverTime;
 }
 
 template<unsigned DIM>
@@ -83,6 +95,7 @@ void FollicularEpitheliumStretchModifier<DIM>::OutputSimulationModifierParameter
     *rParamsFile << "\t\t\t<ApplyExtrinsicPullToAllNodes>" << mApplyExtrinsicPullToAllNodes << "</ApplyExtrinsicPullToAllNodes>\n";
     *rParamsFile << "\t\t\t<PinAnteriorMostCells>" << mPinAnteriorMostCells << "</PinAnteriorMostCells>\n";
     *rParamsFile << "\t\t\t<Speed>" << mSpeed << "</Speed>\n";
+    *rParamsFile << "\t\t\t<IncreaseStretchOverTime>" << mIncreaseStretchOverTime << "</IncreaseStretchOverTime>\n";
 
     AbstractCellBasedSimulationModifier<DIM>::OutputSimulationModifierParameters(rParamsFile);
 }

@@ -18,6 +18,7 @@
 #include "LongAxisVertexBasedDivisionRule.hpp"
 #include "OffLongAxisVertexBasedDivisionRule.hpp"
 #include "TensionOrientedVertexBasedDivisionRule.hpp"
+#include "OffTissueAxisVertexBasedDivisionRule.hpp"
 
 #include "OffLatticeSimulation.hpp"
 #include "FarhadifarForce.hpp"
@@ -31,7 +32,7 @@ class TestFollicularEpitheliumCellPacking : public AbstractCellBasedWithTimingsT
 {
 private:
 
-    void RunSimulations(unsigned divisionRule, unsigned stretch, unsigned numSimulations)
+    void RunSimulations(unsigned divisionRule, unsigned stretch, unsigned numSimulations, bool increaseStretchOverTime=false)
     {
         RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
 
@@ -48,7 +49,7 @@ private:
         // Set parameters for initial tissue geometry
         unsigned num_cells_wide = 5;
         unsigned num_cells_high = 5;
-        unsigned num_lloyd_steps = 3;
+        unsigned num_lloyd_steps = 1;
 
         for (unsigned sim_index=0; sim_index<numSimulations; sim_index++)
         {
@@ -62,6 +63,7 @@ private:
                 case 2:  { out << "LongAxisOrientedDivision";    break; }
                 case 3:  { out << "OffLongAxisOrientedDivision"; break; }
                 case 4:  { out << "TensionOrientedDivision";     break; }
+                case 5:  { out << "OffTissueAxisOrientedDivision";     break; }
                 default: { NEVER_REACHED; }
             }
             switch (stretch)
@@ -147,9 +149,15 @@ private:
                     cell_population.SetVertexBasedDivisionRule(p_tension_rule);
                     break;
                 }
+                case 5:
+                {
+                    MAKE_PTR(OffTissueAxisVertexBasedDivisionRule<2>, p_tissue_rule);
+                    cell_population.SetVertexBasedDivisionRule(p_tissue_rule);
+                    break;
+                }
                 default:
                 {
-                	NEVER_REACHED;
+                    NEVER_REACHED;
                 }
             }
 
@@ -168,9 +176,7 @@ private:
             MAKE_PTR(ConstantTargetAreaModifier<2>, p_modifier);
             simulation.AddSimulationModifier(p_modifier);
 
-            ///\todo impose stretch, if specified
-
-            // Set the rule for cell division orientation
+            // Set the tissue stretch rule
             switch (stretch)
             {
                 case 0:
@@ -180,10 +186,14 @@ private:
                 }
                 case 1:
                 {
-                    MAKE_PTR(ExtrinsicPullModifier<2>, p_modifier);
+                    MAKE_PTR(FollicularEpitheliumStretchModifier<2>, p_modifier); // ExtrinsicPullModifier
                     p_modifier->ApplyExtrinsicPullToAllNodes(true);
                     p_modifier->PinAnteriorMostCells(true);
-                    p_modifier->SetSpeed(0.1);
+                    p_modifier->SetSpeed(0.5); //0.1);
+                    if (increaseStretchOverTime)
+                    {
+                        p_modifier->IncreaseStretchOverTime(true);
+                    }
                     simulation.AddSimulationModifier(p_modifier);
                     break;
                 }
@@ -200,29 +210,24 @@ private:
 
 public:
 
-    void XXTestRandomOrientedDivisionNoStretch() throw (Exception)
+    void XTestRandomOrientedDivisionUniformStretch() throw (Exception)
     {
-        RunSimulations(0, 0, 5);
+        RunSimulations(0, 1, 1);
     }
 
-    void XXTestShortAxisOrientedDivisionNoStretch() throw (Exception)
+    void XTestShortAxisOrientedDivisionNoStretch() throw (Exception)
     {
-        RunSimulations(1, 0, 5);
+        RunSimulations(1, 1, 1);
     }
 
-    void XXTestLongAxisOrientedDivisionNoStretch() throw (Exception)
+    void XTestOffTissueAxisOrientedDivisionUniformStretch() throw (Exception)
     {
-        RunSimulations(2, 0, 5);
+        RunSimulations(5, 1, 1);
     }
 
-    void XXTestOffLongAxisOrientedDivisionNoStretch() throw (Exception)
+    void TestOffTissueAxisOrientedDivisionUniformStretchIncreasingInTime() throw (Exception)
     {
-        RunSimulations(3, 0, 5);
-    }
-
-    void TestOffLongAxisOrientedDivisionUniformStretch() throw (Exception)
-    {
-        RunSimulations(3, 1, 5);
+        RunSimulations(5, 1, 1, true);
     }
 };
 

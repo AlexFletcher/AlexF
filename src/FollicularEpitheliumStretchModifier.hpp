@@ -21,11 +21,13 @@ private:
         archive & mApplyExtrinsicPullToAllNodes;
         archive & mPinAnteriorMostCells;
         archive & mSpeed;
+        archive & mIncreaseStretchOverTime;
     }
 
     bool mApplyExtrinsicPullToAllNodes;
     bool mPinAnteriorMostCells;
     double mSpeed;
+    bool mIncreaseStretchOverTime;
 
 public:
 
@@ -36,6 +38,7 @@ public:
     void ApplyExtrinsicPullToAllNodes(bool applyExtrinsicPullToAllNodes);
     void PinAnteriorMostCells(bool pinAnteriorMostCells);
     void SetSpeed(double speed);
+    void IncreaseStretchOverTime(bool increaseStretchOverTime);
     void OutputSimulationModifierParameters(out_stream& rParamsFile);
 };
 
