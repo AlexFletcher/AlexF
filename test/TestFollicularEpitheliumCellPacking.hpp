@@ -10,7 +10,7 @@
 #include "VoronoiVertexMeshGenerator.hpp"
 #include "WildTypeCellMutationState.hpp"
 #include "TransitCellProliferativeType.hpp"
-#include "ExponentialG1GenerationalCellCycleModel.hpp"
+#include "UniformCellCycleModel.hpp"
 #include "VertexBasedCellPopulation.hpp"
 
 #include "RandomDirectionVertexBasedDivisionRule.hpp"
@@ -27,6 +27,9 @@
 #include "CellPackingDataWriter.hpp"
 #include "FollicularEpitheliumStretchModifier.hpp"
 #include "ExtrinsicPullModifier.hpp"
+#include "AreaBasedCellCycleModel.hpp"
+#include "TargetAreaModifierForAreaBasedCellCycleModel.hpp"
+#include "VolumeTrackingModifier.hpp"
 
 class TestFollicularEpitheliumCellPacking : public AbstractCellBasedWithTimingsTestSuite
 {
@@ -36,15 +39,8 @@ private:
     {
         RandomNumberGenerator* p_gen = RandomNumberGenerator::Instance();
 
-        // Set parameters
-        double mean_g1_phase = 2.0;
-        double s_phase = 1.0;
-        double g2_phase = 1.5;
-        double m_phase = 0.5;
-        double mean_cycle = mean_g1_phase + s_phase + g2_phase + m_phase;
-
-        double time_step = 0.0005;
-        double simulation_duration = 30.0;
+        double time_step = 0.001;
+        double simulation_duration = 300.0;
 
         // Set parameters for initial tissue geometry
         unsigned num_cells_wide = 5;
@@ -95,13 +91,14 @@ private:
             MAKE_PTR(TransitCellProliferativeType, p_type);
             for (unsigned elem_index=0; elem_index<num_cells; elem_index++)
             {
-                ExponentialG1GenerationalCellCycleModel* p_model = new ExponentialG1GenerationalCellCycleModel();
+	            AreaBasedCellCycleModel* p_model = new AreaBasedCellCycleModel();
                 p_model->SetDimension(2);
-                p_model->SetRate(1.0/mean_g1_phase); ///\todo set suitable mean G1 duration and other phases' durations
-                p_model->SetSDuration(s_phase);
-                p_model->SetG2Duration(g2_phase);
-                p_model->SetMDuration(m_phase);
-                p_model->SetMaxTransitGenerations(UINT_MAX);
+                p_model->SetReferenceTargetArea(1.0);
+                p_model->SetMaxGrowthRate(0.25*1.0/6.0);
+                //UniformCellCycleModel* p_model = new UniformCellCycleModel();
+                //p_model->SetDimension(2);
+		        //p_model->SetMinCellCycleDuration(12.0);
+		        //p_model->SetMaxCellCycleDuration(24.0);
 
                 CellPtr p_cell(new Cell(p_state, p_model));
                 p_cell->SetCellProliferativeType(p_type);
@@ -111,7 +108,6 @@ private:
 
             // Create cell population
             VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
-            cell_population.SetDampingConstantNormal(0.1);
             cell_population.SetOutputResultsForChasteVisualizer(false);
             cell_population.SetOutputCellRearrangementLocations(false);
             cell_population.AddCellWriter<CellPackingDataWriter>();
@@ -165,7 +161,7 @@ private:
             OffLatticeSimulation<2> simulation(cell_population);
             simulation.SetOutputDirectory(output_directory);
             simulation.SetDt(time_step);
-            simulation.SetSamplingTimestepMultiple(mean_cycle/time_step);
+            simulation.SetSamplingTimestepMultiple(1.0/time_step);
             simulation.SetEndTime(simulation_duration);
 
             // Pass in a force law
@@ -173,8 +169,13 @@ private:
             simulation.AddForce(p_force);
 
             // Pass in a target area modifier
-            MAKE_PTR(ConstantTargetAreaModifier<2>, p_modifier);
+            //MAKE_PTR(ConstantTargetAreaModifier<2>, p_modifier);
+	        //MAKE_PTR(TargetAreaLinearGrowthModifier<2>, p_modifier);
+	        MAKE_PTR(TargetAreaModifierForAreaBasedCellCycleModel<2>, p_modifier);
             simulation.AddSimulationModifier(p_modifier);
+
+            MAKE_PTR(VolumeTrackingModifier<2>, p_vol_modifier);
+            simulation.AddSimulationModifier(p_vol_modifier);
 
             // Set the tissue stretch rule
             switch (stretch)
@@ -188,8 +189,7 @@ private:
                 {
                     MAKE_PTR(FollicularEpitheliumStretchModifier<2>, p_modifier); // ExtrinsicPullModifier
                     p_modifier->ApplyExtrinsicPullToAllNodes(true);
-                    p_modifier->PinAnteriorMostCells(true);
-                    p_modifier->SetSpeed(0.5); //0.1);
+                    p_modifier->SetSpeed(0.1);
                     if (increaseStretchOverTime)
                     {
                         p_modifier->IncreaseStretchOverTime(true);
@@ -220,12 +220,12 @@ public:
         RunSimulations(1, 1, 1);
     }
 
-    void XTestOffTissueAxisOrientedDivisionUniformStretch() throw (Exception)
+    void TestOffTissueAxisOrientedDivisionUniformStretch() throw (Exception)
     {
-        RunSimulations(5, 1, 1);
+        RunSimulations(5, 0, 1);
     }
 
-    void TestOffTissueAxisOrientedDivisionUniformStretchIncreasingInTime() throw (Exception)
+    void XTestOffTissueAxisOrientedDivisionUniformStretchIncreasingInTime() throw (Exception)
     {
         RunSimulations(5, 1, 1, true);
     }
