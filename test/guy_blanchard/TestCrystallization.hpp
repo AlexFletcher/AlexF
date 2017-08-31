@@ -1,0 +1,86 @@
+#ifndef TESTCRYSTALLIZATION_HPP_
+#define TESTCRYSTALLIZATION_HPP_
+
+#include <cxxtest/TestSuite.h>
+#include "CheckpointArchiveTypes.hpp"
+#include "AbstractCellBasedWithTimingsTestSuite.hpp"
+#include "VoronoiVertexMeshGenerator.hpp"
+#include "CellsGenerator.hpp"
+#include "StretchBasedCellCycleModel.hpp"
+#include "NoCellCycleModel.hpp"
+#include "VertexBasedCellPopulation.hpp"
+#include "FarhadifarForce.hpp"
+#include "FarhadifarForceWithTimeDependentCoefficients.hpp"
+#include "ConstantTargetAreaModifier.hpp"
+#include "OffLatticeSimulation.hpp"
+#include "SmartPointers.hpp"
+#include "FakePetscSetup.hpp"
+#include "ShortAxisVertexBasedDivisionRule.hpp"
+#include "StretchTrackingModifier.hpp"
+#include "CellPackingDataWriter.hpp"
+#include "RandomForce.hpp"
+
+static const double M_DT = 0.01;
+static const double M_RELAXATION_TIME = 800;
+static const double M_VIS_TIME_STEP = 1;
+
+class TestCrystallization : public AbstractCellBasedWithTimingsTestSuite
+{
+public:
+
+    void TestRelaxation() throw (Exception)
+    {
+        // Specify simulation rules
+        bool check_internal_intersections = false;
+
+        // Generate a vertex mesh
+        VoronoiVertexMeshGenerator mesh_generator = VoronoiVertexMeshGenerator(5,5,1,1.0);
+//        MutableVertexMesh<2,2>* p_mesh;
+//        p_mesh = mesh_generator.GetMesh();
+        Toroidal2dVertexMesh* p_mesh;
+        p_mesh = mesh_generator.GetToroidalMesh();
+        p_mesh->SetCheckForInternalIntersections(check_internal_intersections);
+
+        // Create some non-proliferating cells
+        std::vector<CellPtr> cells;
+//        CellsGenerator<StretchBasedCellCycleModel, 2> cells_generator;
+        CellsGenerator<NoCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasic(cells, p_mesh->GetNumElements());
+
+        // Create a cell population that associates the cells with the vertex mesh
+        VertexBasedCellPopulation<2> cell_population(*p_mesh, cells);
+        cell_population.SetOutputResultsForChasteVisualizer(true);
+        cell_population.SetOutputCellRearrangementLocations(false);
+        cell_population.AddCellWriter<CellPackingDataWriter>();
+
+        MAKE_PTR(ShortAxisVertexBasedDivisionRule<2>, p_short_axis_rule);
+        cell_population.SetVertexBasedDivisionRule(p_short_axis_rule);
+
+        // Create a simulation using the cell population
+        OffLatticeSimulation<2> simulation(cell_population);
+        simulation.SetOutputDirectory("TestCrystallization");
+        simulation.SetEndTime(M_RELAXATION_TIME);
+
+        simulation.SetDt(M_DT);
+        unsigned output_time_step_multiple = (unsigned) (1.0/M_DT);
+        simulation.SetSamplingTimestepMultiple(output_time_step_multiple);
+
+//        MAKE_PTR(FarhadifarForce<2>, p_force);
+        MAKE_PTR(FarhadifarForceWithTimeDependentCoefficients<2>, p_force);
+        simulation.AddForce(p_force);
+
+        MAKE_PTR(RandomForce<2>, p_random_force);
+        simulation.AddForce(p_random_force);
+
+        MAKE_PTR(ConstantTargetAreaModifier<2>, p_growth_modifier);
+        simulation.AddSimulationModifier(p_growth_modifier);
+
+//        MAKE_PTR(StretchTrackingModifier<2>, p_modifier);
+//        simulation.AddSimulationModifier(p_modifier);
+
+        simulation.Solve();
+    }
+};
+
+#endif /* TESTCRYSTALLIZATION_HPP_*/
+
