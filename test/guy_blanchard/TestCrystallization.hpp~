@@ -21,7 +21,7 @@
 #include "RandomForce.hpp"
 
 static const double M_DT = 0.01;
-static const double M_RELAXATION_TIME = 500;
+static const double M_RELAXATION_TIME = 800;
 static const double M_VIS_TIME_STEP = 1;
 
 class TestCrystallization : public AbstractCellBasedWithTimingsTestSuite
